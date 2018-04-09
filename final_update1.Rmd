@@ -1,0 +1,93 @@
+```{r}
+library(tidyverse)
+```
+
+```{r}
+
+data = read.csv("actions_under_antiquities_act.csv")
+data
+```
+```{r}
+library(plyr)
+#data[!is.na(data$acres_affected),]
+year_mean = ddply(data, ~year, summarise, mean = mean(as.numeric(acres_affected), na.rm=TRUE))
+year_mean
+detach(package:plyr)
+```
+
+```{r}
+ggplot(year_mean, aes(x =year, y = mean)) + geom_point() + labs(title = "year vs average number of acres affected", y = "mean acres affected") + geom_smooth()
+```
+```{r}
+ggplot(data, aes(x = current_agency)) + geom_bar(stat = "count")
+```
+
+```{r}
+ggplot(data, aes(x = pres_or_congress)) + geom_bar() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + labs(title = "frequency of things" )
+```
+
+```{r}
+dataPre1960 = data[data$year<1950,]
+dataPost1960 = data[data$year>1950,]
+
+dataPre1960$acres_affected = as.numeric(dataPre1960$acres_affected)
+
+
+dataPre1960 <- dataPre1960 %>%
+  dplyr::select(states,acres_affected) %>%
+  mutate(states = tolower(states)) %>%
+  arrange(states) %>%
+  group_by(states) %>%
+  summarize(mean = mean(acres_affected,na.rm = T))
+
+state_data <- data_frame(state.name) %>%
+  mutate(state.name = tolower(state.name)) %>%
+  right_join(dataPre1960, by = c("state.name" = "states"))
+
+state_borders <- map_data("state") %>%
+  left_join(state_data, by = c("region" = "state.name"))
+
+
+ggplot(state_borders, aes(x = long, y = lat, fill = as.numeric(mean))) + 
+  geom_polygon(aes(group = group), color = "black") + 
+  theme_void() + 
+  coord_map("polyconic") + 
+  scale_fill_gradient2(high = "brown", low = "purple",
+                       mid = "white") +
+  labs(title = "Average Acres Affected per State, Before 1960",
+       fill = "Average Acres Affected") +
+  theme(legend.position = "bottom")
+
+
+dataPost1960$acres_affected = as.numeric(dataPost1960$acres_affected)
+
+
+dataPost1960 <- dataPost1960 %>%
+  dplyr::select(states,acres_affected) %>%
+  mutate(states = tolower(states)) %>%
+  arrange(states) %>%
+  group_by(states) %>%
+  summarize(mean = mean(acres_affected,na.rm = T))
+
+
+state_data <- data_frame(state.name) %>%
+  mutate(state.name = tolower(state.name)) %>%
+  right_join(dataPost1960, by = c("state.name" = "states"))
+
+state_borders <- map_data("state") %>%
+  left_join(state_data, by = c("region" = "state.name"))
+
+
+ggplot(state_borders, aes(x = long, y = lat, fill = as.numeric(mean))) + 
+  geom_polygon(aes(group = group), color = "black") + 
+  theme_void() + 
+  coord_map("polyconic") + 
+  scale_fill_gradient2(high = "brown", low = "purple",
+                       mid = "white") +
+  labs(title = "Average Acres Affected per State, After 1960",
+       fill = "Average Acres Affected") +
+  theme(legend.position = "bottom")
+```
+
+
+
